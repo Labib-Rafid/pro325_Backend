@@ -1,39 +1,295 @@
 const db = require("../config/db");
 
 const getPendingUsers = (req, res) => {
-    db.query(
-        "SELECT * FROM users WHERE status='pending'",
-        (err, result) => {
-            if (err) return res.status(500).json(err);
-            res.json(result);
+
+    const sql = `
+        SELECT
+            u.id,
+            u.name,
+            u.email,
+            u.registration_number,
+            o.name AS organization_name,
+            o.type
+        FROM users u
+        LEFT JOIN organizations o
+            ON u.organization_id = o.id
+        WHERE u.status = 'pending'
+    `;
+
+    db.query(sql, (err, result) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
         }
-    );
+
+        res.status(200).json(result);
+    });
 };
+
 
 const approveUser = (req, res) => {
-    db.query(
-        "UPDATE users SET status='approved' WHERE id=?",
-        [req.params.id],
-        (err) => {
-            if (err) return res.status(500).json(err);
-            res.json({ message: "Approved" });
+
+    const userId = req.params.id;
+
+    const sql = `
+        UPDATE users
+        SET status = 'approved'
+        WHERE id = ?
+    `;
+
+    db.query(sql, [userId], (err, result) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
         }
-    );
+
+        res.status(200).json({
+            message: "User approved successfully"
+        });
+    });
 };
 
+
 const rejectUser = (req, res) => {
-    db.query(
-        "UPDATE users SET status='rejected' WHERE id=?",
-        [req.params.id],
-        (err) => {
-            if (err) return res.status(500).json(err);
-            res.json({ message: "Rejected" });
+
+    const userId = req.params.id;
+
+    const sql = `
+        UPDATE users
+        SET status = 'rejected'
+        WHERE id = ?
+    `;
+
+    db.query(sql, [userId], (err, result) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
         }
-    );
+
+        res.status(200).json({
+            message: "User rejected successfully"
+        });
+    });
+};
+
+
+const getPendingVenueRequests = (req, res) => {
+
+    const sql = `
+        SELECT *
+        FROM venue_creation_requests
+        WHERE status = 'pending'
+    `;
+
+    db.query(sql, (err, result) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
+        }
+
+        res.status(200).json(result);
+    });
+};
+
+const approveVenueRequest = (req, res) => {
+
+    const requestId = req.params.id;
+
+    const getRequestSql = `
+        SELECT *
+        FROM venue_creation_requests
+        WHERE id = ?
+    `;
+
+    db.query(getRequestSql, [requestId], (err, result) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
+        }
+
+        if(result.length === 0){
+            return res.status(404).json({
+                message: "Request not found"
+            });
+        }
+
+        const request = result[0];
+
+        const insertVenueSql = `
+            INSERT INTO venues
+            (
+                name,
+                capacity,
+                location
+            )
+            VALUES (?, ?, ?)
+        `;
+
+        db.query(
+            insertVenueSql,
+            [
+                request.venue_name,
+                request.capacity,
+                request.location
+            ],
+            (err) => {
+
+                if(err){
+                    return res.status(500).json({
+                        message: "Venue creation failed",
+                        error: err.message
+                    });
+                }
+
+                const updateSql = `
+                    UPDATE venue_creation_requests
+                    SET status = 'approved'
+                    WHERE id = ?
+                `;
+
+                db.query(updateSql, [requestId]);
+
+                res.status(200).json({
+                    message: "Venue request approved"
+                });
+
+            }
+        );
+
+    });
+
+};
+
+const rejectVenueRequest = (req, res) => {
+
+    const requestId = req.params.id;
+
+    const sql = `
+        UPDATE venue_creation_requests
+        SET status = 'rejected'
+        WHERE id = ?
+    `;
+
+    db.query(sql, [requestId], (err) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
+        }
+
+        res.status(200).json({
+            message: "Venue request rejected"
+        });
+    });
+};
+
+const getAllVenueRequests = (req, res) => {
+
+    const sql = `
+        SELECT
+            vr.*,
+            o.name AS organization_name,
+            v.name AS venue_name
+        FROM venue_requests vr
+        JOIN organizations o
+            ON vr.organization_id = o.id
+        JOIN venues v
+            ON vr.venue_id = v.id
+        ORDER BY vr.created_at DESC
+    `;
+
+    db.query(sql, (err, result) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
+        }
+
+        res.status(200).json(result);
+    });
+};
+
+
+const approveBookingRequest = (req, res) => {
+
+    const requestId = req.params.id;
+
+    const sql = `
+        UPDATE venue_requests
+        SET status = 'approved'
+        WHERE id = ?
+    `;
+
+    db.query(sql, [requestId], (err) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
+        }
+
+        res.status(200).json({
+            message: "Booking approved"
+        });
+    });
+};
+
+
+const rejectBookingRequest = (req, res) => {
+
+    const requestId = req.params.id;
+
+    const sql = `
+        UPDATE venue_requests
+        SET status = 'rejected'
+        WHERE id = ?
+    `;
+
+    db.query(sql, [requestId], (err) => {
+
+        if(err){
+            return res.status(500).json({
+                message: "Database Error",
+                error: err.message
+            });
+        }
+
+        res.status(200).json({
+            message: "Booking rejected"
+        });
+    });
 };
 
 module.exports = {
     getPendingUsers,
     approveUser,
-    rejectUser
+    rejectUser,
+
+    getPendingVenueRequests,
+    approveVenueRequest,
+    rejectVenueRequest,
+
+    getAllVenueRequests,
+    approveBookingRequest,
+    rejectBookingRequest
 };

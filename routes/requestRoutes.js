@@ -5,11 +5,13 @@ const verifyToken = require("../middleware/authMiddleware");
 
 const {
     createRequest,
-    approveRequest
+    requestNewVenue
 } = require("../controllers/requestController");
 const authorizeRoles = require("../middleware/roleMiddleware");
 
-router.post("/", verifyToken, authorizeRoles('representative'), createRequest);
-router.put("/approve/:id", verifyToken, authorizeRoles('admin'), approveRequest);
+router.post("/booking", verifyToken, authorizeRoles('representative'), createRequest);
+router.post("/new-venue", verifyToken, authorizeRoles('representative'), requestNewVenue);
+
+// router.put("/approve/:id", verifyToken, authorizeRoles('admin'), approveRequest);
 
 module.exports = router;

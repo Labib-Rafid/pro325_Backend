@@ -55,18 +55,65 @@ const createRequest = async (req, res) => {
     );
 };
 
-const approveRequest = (req, res) => {
+
+const requestNewVenue = (req, res) => {
+    const {
+        venue_name,
+        location,
+        capacity,
+        reason
+    } = req.body;
+
+    const sql = `
+        INSERT INTO venue_creation_requests
+        (
+            requested_by,
+            venue_name,
+            location,
+            capacity,
+            reason
+        )
+        VALUES (?, ?, ?, ?, ?)
+    `;
+
     db.query(
-        "UPDATE venue_requests SET status='approved' WHERE id=?",
-        [req.params.id],
+        sql,
+        [
+            req.user.id,
+            venue_name,
+            location,
+            capacity,
+            reason
+        ],
         (err) => {
-            if (err) return res.status(500).json(err);
-            res.json({ message: "Approved" });
+            if(err){
+                return res.status(500).json({
+                    message: err.message
+                });
+            }
+
+            res.status(201).json({
+                message: "Venue creation request submitted"
+            });
         }
     );
 };
 
+// const approveRequest = (req, res) => {
+//     db.query(
+//         "UPDATE venue_requests SET status='approved' WHERE id=?",
+//         [req.params.id],
+//         (err) => {
+//             if (err) return res.status(500).json(err);
+//             res.json({ message: "Approved" });
+//         }
+//     );
+// };
+
+
+
 module.exports = {
     createRequest,
-    approveRequest
+    requestNewVenue
+    // approveRequest
 };

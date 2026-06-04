@@ -6,11 +6,14 @@ const authorizeRoles = require("../middleware/roleMiddleware");
 
 const {
     createVenue,
-    getVenues
+    getVenues,
+    updateVenue,
+    deleteVenue
 } = require("../controllers/venueController");
-const authorizeRoles = require("../middleware/roleMiddleware");
 
 router.post("/", verifyToken, authorizeRoles("admin"), createVenue);
 router.get("/", verifyToken, getVenues);
+router.put("/:id", verifyToken, authorizeRoles("admin"), updateVenue);
+router.delete("/:id", verifyToken, authorizeRoles("admin"), deleteVenue);
 
 module.exports = router;
