@@ -90,6 +90,29 @@ CREATE TABLE venue_requests (
     CHECK (start_time < end_time)
 );
 
+CREATE TABLE venue_creation_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    requested_by INT NOT NULL,
+
+    venue_name VARCHAR(150) NOT NULL,
+
+    location VARCHAR(255),
+
+    capacity INT,
+
+    reason TEXT,
+
+    status ENUM('pending','approved','rejected')
+        DEFAULT 'pending',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (requested_by)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE approval_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
