@@ -3,9 +3,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const registerUser = async(req, res)=>{
-    const {name, email, password, role, department_id, registration_number} = req.body;
+    const {name, email, password, organization_id, registration_number} = req.body;
 
-    if(!name || !email || !password || !department_id || !registration_number){
+    if(!name || !email || !password || !organization_id || !registration_number){
         return res.status(400).json({
             message: "All Fields are required"
         });
@@ -31,16 +31,16 @@ const registerUser = async(req, res)=>{
 
             const innerSql = `
                 INSERT INTO users 
-                    (name, email, password_hash, department_id, registration_number)
-                    VALUES (?, ?, ?, ?, ?)
+                    (name, email, password_hash, organization_id, registration_number, status)
+                    VALUES (?, ?, ?, ?, ?, 'pending')
             `;
 
             db.query(innerSql,[
                         name,
                         email,
                         hashedPass,
-                        department_id,
-                        registration_number || null
+                        organization_id,
+                        registration_number
                     ], (err, result)=>{
                 if(err){
                     return res.status(500).json({
@@ -106,8 +106,10 @@ const loginUser = async(req, res)=>{
             const token = jwt.sign(
                 {
                     id: user.id,
-                    department_id: user.department_id,
-                    registration_number: user.registration_number
+                    role: user.role,
+                    organization_id: user.organization_id,
+                    registration_number: user.registration_number,
+                    status: user.status
                 },
                 process.env.JWT_SECRET,
                 {
@@ -122,8 +124,10 @@ const loginUser = async(req, res)=>{
                     id: user.id,
                     name: user.name,
                     email: user.email,
-                    department_id: user.department_id,
-                    registration_number: user.registration_number
+                    organization_id: user.organization_id,
+                    registration_number: user.registration_number,
+                    role: user.role,
+                    status: user.status
                 }
             });
 
