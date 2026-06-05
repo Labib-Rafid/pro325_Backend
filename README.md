@@ -5,7 +5,7 @@ University Venue Management System [SWE 0612-3130]
 ## Base URL
 
 ```http
-http://localhost:{port}
+https://pro325-backend.onrender.com
 ```
 
 ---
