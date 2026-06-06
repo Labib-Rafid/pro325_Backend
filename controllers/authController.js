@@ -66,6 +66,21 @@ const registerUser = async(req, res)=>{
 };
 
 
+const listOrganizations = (req, res) => {
+    const sql = `SELECT id, name FROM organizations ORDER BY name`;
+
+    db.query(sql, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Unable to load organizations.",
+                error: err.message
+            });
+        }
+
+        res.status(200).json(result);
+    });
+};
+
 const loginUser = async(req, res)=>{
     const {email, password} = req.body;
 
@@ -143,4 +158,4 @@ const loginUser = async(req, res)=>{
     }
 };
 
-module.exports = {registerUser, loginUser};
+module.exports = {registerUser, loginUser, listOrganizations};
