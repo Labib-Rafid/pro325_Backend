@@ -34,14 +34,13 @@ const approveUser = (req, res) => {
 
     const userId = req.params.id;
 
-    const sql = `
-        UPDATE users
-        SET status = 'approved'
+    const getUserSql = `
+        SELECT id, role, organization_id
+        FROM users
         WHERE id = ?
     `;
 
-    db.query(sql, [userId], (err, result) => {
-
+    db.query(getUserSql, [userId], (err, result) => {
         if(err){
             return res.status(500).json({
                 message: "Database Error",
@@ -49,9 +48,63 @@ const approveUser = (req, res) => {
             });
         }
 
-        res.status(200).json({
-            message: "User approved successfully"
-        });
+        if(result.length === 0){
+            return res.status(404).json({
+                message: "User Not Found"
+            });
+        }
+
+        const user = result[0];
+
+        const approveSql = `
+            UPDATE users
+            SET status = 'approved'
+            WHERE id = ?
+        `;
+
+        const unapproveOtherReps = () => {
+            return new Promise((resolve, reject) => {
+                if(user.role !== 'representative' || !user.organization_id){
+                    return resolve();
+                }
+
+                const sql = `
+                    UPDATE users
+                    SET status = 'pending'
+                    WHERE organization_id = ?
+                      AND role = 'representative'
+                      AND id <> ?
+                      AND status = 'approved'
+                `;
+
+                db.query(sql, [user.organization_id, userId], (err) => {
+                    if(err) return reject(err);
+                    resolve();
+                });
+            });
+        };
+
+        unapproveOtherReps()
+            .then(() => {
+                db.query(approveSql, [userId], (err, result) => {
+                    if(err){
+                        return res.status(500).json({
+                            message: "Database Error",
+                            error: err.message
+                        });
+                    }
+
+                    res.status(200).json({
+                        message: "User approved successfully"
+                    });
+                });
+            })
+            .catch((err) => {
+                res.status(500).json({
+                    message: "Database Error",
+                    error: err.message
+                });
+            });
     });
 };
 

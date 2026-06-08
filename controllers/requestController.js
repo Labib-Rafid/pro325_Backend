@@ -39,7 +39,7 @@ const createRequest = async (req, res) => {
 
     if (clash) {
         return res.status(400).json({
-            message: "Time slot already booked"
+            message: "Already taken"
         });
     }
 
@@ -99,21 +99,54 @@ const requestNewVenue = (req, res) => {
     );
 };
 
-// const approveRequest = (req, res) => {
-//     db.query(
-//         "UPDATE venue_requests SET status='approved' WHERE id=?",
-//         [req.params.id],
-//         (err) => {
-//             if (err) return res.status(500).json(err);
-//             res.json({ message: "Approved" });
-//         }
-//     );
-// };
+const getMyRequests = (req, res) => {
+    const userId = req.user.id;
 
+    const bookingsSql = `
+        SELECT
+            vr.*,
+            v.name AS venue_name,
+            o.name AS organization_name
+        FROM venue_requests vr
+        JOIN venues v
+            ON vr.venue_id = v.id
+        JOIN organizations o
+            ON vr.organization_id = o.id
+        WHERE vr.requested_by = ?
+        ORDER BY vr.created_at DESC
+    `;
+
+    const venueRequestsSql = `
+        SELECT *
+        FROM venue_creation_requests
+        WHERE requested_by = ?
+        ORDER BY created_at DESC
+    `;
+
+    db.query(bookingsSql, [userId], (err, bookings) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Unable to load booking requests.",
+                error: err.message
+            });
+        }
+
+        db.query(venueRequestsSql, [userId], (err, venueRequests) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "Unable to load venue requests.",
+                    error: err.message
+                });
+            }
+
+            res.status(200).json({ bookings, venueRequests });
+        });
+    });
+};
 
 
 module.exports = {
     createRequest,
-    requestNewVenue
-    // approveRequest
+    requestNewVenue,
+    getMyRequests,
 };

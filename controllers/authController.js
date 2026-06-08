@@ -67,9 +67,20 @@ const registerUser = async(req, res)=>{
 
 
 const listOrganizations = (req, res) => {
-    const sql = `SELECT id, name FROM organizations ORDER BY name`;
+    const orgType = String(req.query.type || '').toLowerCase();
+    const validTypes = ['club', 'department'];
 
-    db.query(sql, (err, result) => {
+    let sql = `SELECT id, name, type FROM organizations`;
+    const params = [];
+
+    if (orgType && validTypes.includes(orgType)) {
+        sql += ` WHERE type = ?`;
+        params.push(orgType);
+    }
+
+    sql += ` ORDER BY name`;
+
+    db.query(sql, params, (err, result) => {
         if (err) {
             return res.status(500).json({
                 message: "Unable to load organizations.",
