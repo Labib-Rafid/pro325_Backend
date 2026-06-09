@@ -255,6 +255,13 @@ const rejectVenueRequest = (req, res) => {
 
 const getAllVenueRequests = (req, res) => {
 
+    // const sql = `
+    //     SELECT *
+    //     FROM venue_requests
+    //     WHERE status = 'pending'
+    //     ORDER BY event_date ASC, start_time ASC
+    // `;
+
     const sql = `
         SELECT
             vr.*,
@@ -265,6 +272,7 @@ const getAllVenueRequests = (req, res) => {
             ON vr.organization_id = o.id
         JOIN venues v
             ON vr.venue_id = v.id
+        WHERE vr.status = 'pending'
         ORDER BY vr.created_at DESC
     `;
 
@@ -333,6 +341,45 @@ const rejectBookingRequest = (req, res) => {
     });
 };
 
+//Seperate Approved and Rejected Requests From Approved Requests
+
+const getApprovedVenueRequests = (req, res) => {
+
+    const sql = `
+        SELECT *
+        FROM venue_requests
+        WHERE status = 'approved'
+        ORDER BY event_date ASC, start_time ASC
+    `;
+
+    db.query(sql, (err, result) => {
+        if(err){
+            return res.status(500).json(err);
+        }
+
+        res.json(result);
+    });
+};
+
+const getRejectedVenueRequests = (req, res) => {
+
+    const sql = `
+        SELECT *
+        FROM venue_requests
+        WHERE status = 'rejected'
+        ORDER BY created_at DESC
+    `;
+
+    db.query(sql, (err, result) => {
+        if(err){
+            return res.status(500).json(err);
+        }
+
+        res.json(result);
+    });
+};
+
+
 module.exports = {
     getPendingUsers,
     approveUser,
@@ -344,5 +391,8 @@ module.exports = {
 
     getAllVenueRequests,
     approveBookingRequest,
-    rejectBookingRequest
+    rejectBookingRequest,
+
+    getApprovedVenueRequests,
+    getRejectedVenueRequests
 };

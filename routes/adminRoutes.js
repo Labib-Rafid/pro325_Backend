@@ -15,7 +15,10 @@ const {
 
     getAllVenueRequests,
     approveBookingRequest,
-    rejectBookingRequest
+    rejectBookingRequest,
+
+    getApprovedVenueRequests,
+    getRejectedVenueRequests
 } = require("../controllers/adminController");
 
 router.get("/pending", verifyToken, authorizeRoles("admin"), getPendingUsers);
@@ -31,6 +34,24 @@ router.put("/venue-requests/:id/reject", verifyToken, authorizeRoles("admin"), r
 router.get("/booking-requests", verifyToken, authorizeRoles("admin"), getAllVenueRequests);
 router.put("/booking-requests/:id/approve", verifyToken, authorizeRoles("admin"), approveBookingRequest);
 router.put("/booking-requests/:id/reject", verifyToken, authorizeRoles("admin"), rejectBookingRequest);
+
+
+router.get(
+    "/booking-requests/approved",
+    verifyToken,
+    authorizeRoles("admin"),
+    getApprovedVenueRequests
+);
+
+router.get(
+    "/booking-requests/rejected",
+    verifyToken,
+    authorizeRoles("admin"),
+    getRejectedVenueRequests
+);
+
+
+
 
 
 module.exports = router;
