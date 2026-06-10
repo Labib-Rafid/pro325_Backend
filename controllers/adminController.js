@@ -151,9 +151,17 @@ const rejectUser = (req, res) => {
 const getPendingVenueRequests = (req, res) => {
 
     const sql = `
-        SELECT *
-        FROM venue_creation_requests
-        WHERE status = 'pending'
+        SELECT
+            vcr.*,
+            u.name AS user_name,
+            o.name AS organization_name
+        FROM venue_creation_requests vcr
+        JOIN users u
+            ON vcr.requested_by = u.id
+        LEFT JOIN organizations o
+            ON u.organization_id = o.id
+        WHERE vcr.status = 'pending'
+        ORDER BY vcr.created_at DESC
     `;
 
     db.query(sql, (err, result) => {

@@ -101,7 +101,16 @@ const loginUser = async(req, res)=>{
         });
     }
     try{
-        const Usersql = `SELECT * FROM users WHERE email = ?`;
+        // const Usersql = `SELECT * FROM users WHERE email = ?`;
+        const Usersql = `
+            SELECT
+                u.*,
+                o.name AS organization_name
+            FROM users u
+            LEFT JOIN organizations o
+                ON u.organization_id = o.id
+            WHERE u.email = ?
+        `;
 
         db.query(Usersql, [email], async (err, result)=>{
             if(err){
@@ -135,6 +144,7 @@ const loginUser = async(req, res)=>{
                     role: user.role,
                     organization_id: user.organization_id,
                     registration_number: user.registration_number,
+                    organization_name: user.organization_name,
                     status: user.status
                 },
                 process.env.JWT_SECRET,
@@ -151,6 +161,7 @@ const loginUser = async(req, res)=>{
                     name: user.name,
                     email: user.email,
                     organization_id: user.organization_id,
+                    organization_name: user.organization_name,
                     registration_number: user.registration_number,
                     role: user.role,
                     status: user.status
