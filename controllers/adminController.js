@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const createNotification = require("../utils/notificationHelper");
 
 const getPendingUsers = (req, res) => {
 
@@ -86,18 +87,30 @@ const approveUser = (req, res) => {
 
         unapproveOtherReps()
             .then(() => {
-                db.query(approveSql, [userId], (err, result) => {
-                    if(err){
-                        return res.status(500).json({
-                            message: "Database Error",
-                            error: err.message
-                        });
-                    }
 
-                    res.status(200).json({
-                        message: "User approved successfully"
+
+                db.query(approveSql, [userId], (err, result) => {
+                if(err){
+                    return res.status(500).json({
+                        message: "Database Error",
+                        error: err.message
                     });
+                }
+
+                createNotification(
+                    userId,
+                    "Account Approved",
+                    "Your representative account has been approved by the administrator.",
+                    "approval",
+                    "/dashboard"
+                );
+
+                res.status(200).json({
+                    message: "User approved successfully"
                 });
+            });
+
+
             })
             .catch((err) => {
                 res.status(500).json({
@@ -294,13 +307,13 @@ const approveBookingRequest = (req, res) => {
 
     const requestId = req.params.id;
 
-    const sql = `
-        UPDATE venue_requests
-        SET status = 'approved'
+    const getRequestSql = `
+        SELECT requested_by, event_name
+        FROM venue_requests
         WHERE id = ?
     `;
 
-    db.query(sql, [requestId], (err) => {
+    db.query(getRequestSql, [requestId], (err, result) => {
 
         if(err){
             return res.status(500).json({
@@ -309,9 +322,42 @@ const approveBookingRequest = (req, res) => {
             });
         }
 
-        res.status(200).json({
-            message: "Booking approved"
+        if(result.length === 0){
+            return res.status(404).json({
+                message: "Booking Request Not Found"
+            });
+        }
+
+        const request = result[0];
+
+        const approveSql = `
+            UPDATE venue_requests
+            SET status = 'approved'
+            WHERE id = ?
+        `;
+
+        db.query(approveSql, [requestId], (err) => {
+
+            if(err){
+                return res.status(500).json({
+                    message: "Database Error",
+                    error: err.message
+                });
+            }
+
+            createNotification(
+                request.requested_by,
+                "Booking Approved",
+                `Your booking request "${request.event_name}" has been approved.`,
+                "booking",
+                "/my-requests"
+            );
+
+            res.status(200).json({
+                message: "Booking approved"
+            });
         });
+
     });
 };
 
@@ -320,13 +366,13 @@ const rejectBookingRequest = (req, res) => {
 
     const requestId = req.params.id;
 
-    const sql = `
-        UPDATE venue_requests
-        SET status = 'rejected'
+    const getRequestSql = `
+        SELECT requested_by, event_name
+        FROM venue_requests
         WHERE id = ?
     `;
 
-    db.query(sql, [requestId], (err) => {
+    db.query(getRequestSql, [requestId], (err, result) => {
 
         if(err){
             return res.status(500).json({
@@ -335,9 +381,42 @@ const rejectBookingRequest = (req, res) => {
             });
         }
 
-        res.status(200).json({
-            message: "Booking rejected"
+        if(result.length === 0){
+            return res.status(404).json({
+                message: "Booking Request Not Found"
+            });
+        }
+
+        const request = result[0];
+
+        const rejectSql = `
+            UPDATE venue_requests
+            SET status = 'rejected'
+            WHERE id = ?
+        `;
+
+        db.query(rejectSql, [requestId], (err) => {
+
+            if(err){
+                return res.status(500).json({
+                    message: "Database Error",
+                    error: err.message
+                });
+            }
+
+            createNotification(
+                request.requested_by,
+                "Booking Rejected",
+                `Your booking request "${request.event_name}" has been rejected.`,
+                "booking",
+                "/my-requests"
+            );
+
+            res.status(200).json({
+                message: "Booking rejected"
+            });
         });
+
     });
 };
 
